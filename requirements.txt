@@ -1,0 +1,13 @@
+networkx>=3.0
+numpy
+scipy
+pandas
+matplotlib
+scikit-learn
+python-louvain
+igraph
+leidenalg
+powerlaw
+requests
+substack-api
+langdetect
