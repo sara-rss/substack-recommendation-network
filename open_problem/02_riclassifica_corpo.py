@@ -8,21 +8,21 @@ Come funziona (in modo deterministico, senza rifare KMeans):
  3. assegno ogni nodo debole, descritto ora da titolo+sottotitolo+corpo, al centroide piu'
     vicino (il corpo e' piu' informativo dei soli titoli, quindi la nuova etichetta sostituisce
     la vecchia; riguarda solo nodi che erano deboli).
-Uscita: data_collection/data/temi_finali.csv e plots/cluster_parole.csv"""
+Uscita: data_collection/data/elaborazione/temi_finali.csv e plots/cluster_parole.csv"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import csv, json
 import numpy as np
 from collections import Counter
-from comune import DATA, PLOT_OP, carica_titoli, vettorizzatore, carica_nomi_cluster
+from comune import RACCOLTA, ELAB, PLOT_OP, carica_titoli, vettorizzatore, carica_nomi_cluster
 
 info = carica_nomi_cluster()
 if any(not t for t, _, _ in info.values()):
-    sys.exit("Compila prima data_collection/data/nomi_cluster.csv (tema, macro, debole per ogni cluster).")
+    sys.exit("Compila prima data_collection/data/elaborazione/nomi_cluster.csv (tema, macro, debole per ogni cluster).")
 nomi = {c: t for c, (t, _, _) in info.items()}
 DEBOLI = {t for t, _, deb in info.values() if deb}
-cluster = {u: int(c) for u, c in csv.reader(open(DATA / "cluster_nodi.csv"))}
+cluster = {u: int(c) for u, c in csv.reader(open(ELAB / "cluster_nodi.csv"))}
 
 # 1. stesso corpus e stesso TF-IDF del clustering
 testi = carica_titoli()
@@ -55,7 +55,7 @@ with open(PLOT_OP / "cluster_parole.csv", "w", newline="") as f:
 # 3. riclassifico i nodi deboli col corpo del testo
 etichetta = {u: nomi[c] for u, c in cluster.items()}
 nu, nd = [], []
-for riga in open(DATA / "testi_extra.jsonl"):
+for riga in open(RACCOLTA / "testi_extra.jsonl"):
     d = json.loads(riga)
     testo = " ".join(f"{x.get('titolo') or ''} {x.get('sottotitolo') or ''} {x.get('corpo') or ''}"
                      for x in d.get("testi", []))
@@ -71,7 +71,7 @@ print(f"\nNodi deboli riesaminati: {len(nu)} | recuperati a un tema vero: {sum(c
 for k, v in cambi.most_common(10):
     print(f"  {k:30} {v}")
 
-with open(DATA / "temi_finali.csv", "w", newline="") as f:
+with open(ELAB / "temi_finali.csv", "w", newline="") as f:
     csv.writer(f).writerows(sorted(etichetta.items()))
 c = Counter(etichetta.values()); tot = sum(c.values())
 print("\n--- distribuzione dopo il recupero ---")

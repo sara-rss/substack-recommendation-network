@@ -3,25 +3,9 @@ Controllo se la classificazione automatica li mette nella macro-categoria giusta
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from comune import carica_attributi, corto
+from comune import carica_attributi, corto, SEED_PER_AREA
 
-ATTESO = {
-    "https://georgesaunders.substack.com": "arts_letters",
-    "https://footnotesandtangents.substack.com": "arts_letters",
-    "https://pandorasykes.substack.com": "arts_letters",
-    "https://greenwald.substack.com": "politics",
-    "https://samf.substack.com": "politics",
-    "https://chrishedges.substack.com": "politics",
-    "https://natesnewsletter.substack.com": "technology",
-    "https://newsletter.pragmaticengineer.com": "technology",
-    "https://damnang2.substack.com": "technology",
-    "https://michaeljburry.substack.com": "finance",
-    "https://capitalwars.substack.com": "finance",
-    "https://charliepgarcia.substack.com": "finance",
-    "https://yourlocalepidemiologist.substack.com": "science_health",
-    "https://theskepticalcardiologist.substack.com": "science_health",
-    "https://theunbiasedscipod.substack.com": "science_health",
-}
+ATTESO = {u: area for area, lista in SEED_PER_AREA.items() for u in lista}
 tema, macro = carica_attributi()
 ok = 0
 for u, att in ATTESO.items():

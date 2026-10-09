@@ -1,12 +1,15 @@
+"""ATTRIBUTI - Per ogni newsletter della rete scarico titolo e sottotitolo degli ultimi 10 post
+(endpoint pubblico /api/v1/archive). Servono a ricavare il tema della newsletter.
+Con checkpoint: se si interrompe, rilanciandolo riprende. Uscita: data/testi.jsonl"""
 import sys, json, os, time, requests
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from comune import DATA
+from comune import RACCOLTA, lista_nodi
 
-OUT, STATO = DATA / "testi.jsonl", DATA / "stato_testi.json"
+OUT, STATO = RACCOLTA / "testi.jsonl", RACCOLTA / "stato_testi.json"
 HEAD = {"User-Agent": "Mozilla/5.0 (ricerca accademica UniPi)", "Accept": "application/json"}
 
-nodi = [r.strip() for r in open(DATA / "nodi_finali.csv") if r.strip()]
+nodi = lista_nodi()
 fatti = set(json.load(open(STATO))) if STATO.exists() else set()
 print(f"{len(nodi)} newsletter, {len(fatti)} gia' scaricate")
 

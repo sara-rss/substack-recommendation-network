@@ -1,32 +1,41 @@
 """PARTE 1 - Costruisce la rete finale: sottografo indotto sui soli nodi ESPANSI con successo
 (per ogni nodo della rete conosciamo tutte le raccomandazioni in uscita).
-Uscita: data/rete_finale.csv (archi diretti) e data/nodi_finali.csv."""
+Uscita (dataset finale, in data/):
+  archi.csv  sorgente, destinazione, reciproca   (una riga per raccomandazione: sorgente -> destinazione)
+  nodi.csv   url, seed, out_degree, in_degree    (una riga per newsletter; gli attributi tematici e le
+             comunita' vengono aggiunti alla fine da open_problem/10_esporta_rete.py)"""
 import sys, json
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from comune import DATA
+from comune import DATA, RACCOLTA, SEED
 import pandas as pd
 
-df = pd.read_csv(DATA / "archi.csv", names=["sorgente", "destinazione"]).drop_duplicates()
-stato = json.load(open(DATA / "stato.json"))
+df = pd.read_csv(RACCOLTA / "raccomandazioni_grezze.csv", names=["sorgente", "destinazione"]).drop_duplicates()
+stato = json.load(open(RACCOLTA / "stato_crawl.json"))
 falliti = set(stato.get("falliti", []))
 espansi = set(stato["espansi"]) - falliti        # esclusi i nodi con richiesta fallita
 
-print(f"Archi grezzi raccolti:        {len(df)}")
-print(f"Nodi scoperti (noti):         {len(stato['noti'])}")
-print(f"Nodi espansi con successo:    {len(espansi)}")
-print(f"Nodi falliti (esclusi):       {len(falliti)}")
+print(f"Raccomandazioni grezze raccolte: {len(df)}")
+print(f"Nodi scoperti (noti):            {len(stato['noti'])}")
+print(f"Nodi espansi con successo:       {len(espansi)}")
+print(f"Nodi falliti (esclusi):          {len(falliti)}")
 
-interno = df[df.sorgente.isin(espansi) & df.destinazione.isin(espansi)
-             & (df.sorgente != df.destinazione)]
-senza_out = len(espansi) - interno.sorgente.nunique()
+archi = df[df.sorgente.isin(espansi) & df.destinazione.isin(espansi)
+           & (df.sorgente != df.destinazione)].sort_values(["sorgente", "destinazione"])
+coppie = set(zip(archi.sorgente, archi.destinazione))
+archi["reciproca"] = [int((t, s) in coppie) for s, t in zip(archi.sorgente, archi.destinazione)]
+
+nodi = pd.DataFrame({"url": sorted(espansi)})
+nodi["seed"] = nodi.url.isin(SEED).astype(int)
+nodi["out_degree"] = nodi.url.map(archi.sorgente.value_counts()).fillna(0).astype(int)
+nodi["in_degree"] = nodi.url.map(archi.destinazione.value_counts()).fillna(0).astype(int)
+
 print("\n--- rete finale ---")
-print(f"Nodi:  {len(espansi)}")
-print(f"Archi diretti: {len(interno)}")
-print(f"Nodi senza raccomandazioni in uscita verso la rete: {senza_out}")
-print(f"Out-degree massimo: {interno.sorgente.value_counts().max()} "
-      f"(tetto della piattaforma: 50)")
+print(f"Nodi: {len(nodi)} (di cui seed: {nodi.seed.sum()})")
+print(f"Archi diretti: {len(archi)} | reciproci: {archi.reciproca.mean():.3f}")
+print(f"Nodi senza raccomandazioni in uscita verso la rete: {(nodi.out_degree == 0).sum()}")
+print(f"Out-degree massimo: {nodi.out_degree.max()} (tetto della piattaforma: 50)")
 
-interno.to_csv(DATA / "rete_finale.csv", index=False, header=False)
-pd.Series(sorted(espansi)).to_csv(DATA / "nodi_finali.csv", index=False, header=False)
-print("\nSalvati rete_finale.csv e nodi_finali.csv")
+archi.to_csv(DATA / "archi.csv", index=False)
+nodi.to_csv(DATA / "nodi.csv", index=False)
+print("\nSalvati data/archi.csv e data/nodi.csv")

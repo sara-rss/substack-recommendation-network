@@ -2,14 +2,14 @@
 NON ambigue, applicato a titolo+sottotitolo+corpo. Regole prudenziali: almeno l'1% delle parole
 deve essere tematico e il primo tema deve battere il secondo di almeno 1.5 volte; altrimenti
 il nodo resta com'e'. Poi associa a ogni tema la sua macro-categoria (da nomi_cluster.csv).
-Legge data_collection/data/temi_finali.csv (mai modificato) e scrive data_collection/data/attributi_nodi.csv:
+Legge data_collection/data/elaborazione/temi_finali.csv (mai modificato) e scrive data_collection/data/elaborazione/attributi_nodi.csv:
 si puo' rilanciare quante volte si vuole, il risultato e' sempre lo stesso."""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import csv, json, re
 from collections import Counter
-from comune import DATA, carica_nomi_cluster, carica_lingue
+from comune import lista_nodi, RACCOLTA, ELAB, carica_nomi_cluster, carica_lingue
 
 info = carica_nomi_cluster()
 MACRO = {t: m for t, m, _ in info.values()}            # tema -> macro (da nomi_cluster.csv)
@@ -62,9 +62,9 @@ def punteggia(testo):
     return max(score, key=score.get)
 
 
-tema = dict(csv.reader(open(DATA / "temi_finali.csv")))
+tema = dict(csv.reader(open(ELAB / "temi_finali.csv")))
 cambi = Counter()
-for riga in open(DATA / "testi_extra.jsonl"):
+for riga in open(RACCOLTA / "testi_extra.jsonl"):
     d = json.loads(riga)
     u = d["url"]
     if tema.get(u) not in DEBOLI:
@@ -86,10 +86,10 @@ for u, l in carica_lingue().items():
         tema[u] = "non_english"
 MACRO = {**MACRO_DIZ, **MACRO, "non_english": "unlabeled"}
 righe = [(u, t, MACRO[t]) for u, t in sorted(tema.items())]
-with open(DATA / "attributi_nodi.csv", "w", newline="") as f:
+with open(ELAB / "attributi_nodi.csv", "w", newline="") as f:
     w = csv.writer(f); w.writerow(["url", "tema", "macro"]); w.writerows(righe)
 
-n_rete = sum(1 for r in open(DATA / "nodi_finali.csv") if r.strip())
+n_rete = len(lista_nodi())
 for titolo, col in [("TEMI FINI", 1), ("MACRO-CATEGORIE", 2)]:
     print(f"\n=== {titolo} (su {len(righe)} nodi con testo) ===")
     c = Counter(r[col] for r in righe)

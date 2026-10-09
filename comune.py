@@ -5,24 +5,48 @@ from pathlib import Path
 import networkx as nx
 
 ROOT = Path(__file__).resolve().parent
-DATA = ROOT / "data_collection" / "data"      # TUTTI i dati: raccolti, rete finale e attributi dei nodi
+DATA = ROOT / "data_collection" / "data"      # dataset finale: nodi.csv, archi.csv, grafo_finale.gexf
+RACCOLTA = DATA / "raccolta"                   # dati grezzi della raccolta (crawl e testi)
+ELAB = DATA / "elaborazione"                   # file intermedi della pipeline (temi, comunita')
 PLOT_NA = ROOT / "network_analysis" / "plots"  # figure e tabelle di risultati della Parte 2
 PLOT_OP = ROOT / "open_problem" / "plots"      # figure e tabelle di risultati della Parte 4
-for d in (DATA, PLOT_NA, PLOT_OP):
+for d in (DATA, RACCOLTA, ELAB, PLOT_NA, PLOT_OP):
     d.mkdir(parents=True, exist_ok=True)
+
+
+# le 15 newsletter di partenza del crawl, 3 per area (URL gia' normalizzati)
+SEED_PER_AREA = {
+    "arts_letters":   ["https://georgesaunders.substack.com", "https://footnotesandtangents.substack.com",
+                       "https://pandorasykes.substack.com"],
+    "politics":       ["https://greenwald.substack.com", "https://samf.substack.com",
+                       "https://chrishedges.substack.com"],
+    "technology":     ["https://natesnewsletter.substack.com", "https://newsletter.pragmaticengineer.com",
+                       "https://damnang2.substack.com"],
+    "finance":        ["https://michaeljburry.substack.com", "https://capitalwars.substack.com",
+                       "https://charliepgarcia.substack.com"],
+    "science_health": ["https://yourlocalepidemiologist.substack.com",
+                       "https://theskepticalcardiologist.substack.com", "https://theunbiasedscipod.substack.com"],
+}
+SEED = [u for lista in SEED_PER_AREA.values() for u in lista]
 
 
 def archi_diretti():
     """Lista degli archi diretti (chi raccomanda, chi e' raccomandato), senza self-loop."""
-    with open(DATA / "rete_finale.csv", newline="") as f:
-        return [(s, t) for s, t in csv.reader(f) if s != t]
+    with open(DATA / "archi.csv", newline="") as f:
+        return [(r["sorgente"], r["destinazione"]) for r in csv.DictReader(f)
+                if r["sorgente"] != r["destinazione"]]
+
+
+def lista_nodi():
+    """Tutti i nodi della rete (anche quelli senza archi uscenti)."""
+    with open(DATA / "nodi.csv", newline="") as f:
+        return [r["url"] for r in csv.DictReader(f)]
 
 
 def carica_grafo():
     """Rete non diretta, non pesata, semplice (come richiesto dalla Parte 2)."""
     G = nx.Graph()
-    with open(DATA / "nodi_finali.csv") as f:
-        G.add_nodes_from(riga.strip() for riga in f if riga.strip())
+    G.add_nodes_from(lista_nodi())
     G.add_edges_from(archi_diretti())
     return G
 
@@ -36,7 +60,7 @@ def carica_grafo_diretto():
 def carica_attributi():
     """url -> (tema fine, macro-categoria). Solo i nodi con testo sufficiente."""
     tema, macro = {}, {}
-    with open(DATA / "attributi_nodi.csv", newline="") as f:
+    with open(ELAB / "attributi_nodi.csv", newline="") as f:
         r = csv.reader(f); next(r)
         for u, t, m in r:
             tema[u] = t; macro[u] = m
@@ -44,7 +68,7 @@ def carica_attributi():
 
 
 def carica_comunita():
-    with open(DATA / "comunita.csv", newline="") as f:
+    with open(ELAB / "comunita.csv", newline="") as f:
         r = csv.reader(f); next(r)
         return {u: int(c) for u, c in r}
 
@@ -74,7 +98,7 @@ def carica_titoli(min_caratteri=20):
     """url -> testo (titolo+sottotitolo degli ultimi post), solo se c'e' abbastanza testo."""
     import json
     testi = {}
-    for riga in open(DATA / "testi.jsonl"):
+    for riga in open(RACCOLTA / "testi.jsonl"):
         d = json.loads(riga)
         t = " ".join(f"{x.get('titolo') or ''} {x.get('sottotitolo') or ''}" for x in d.get("testi", []))
         if len(t.strip()) >= min_caratteri:
@@ -83,13 +107,13 @@ def carica_titoli(min_caratteri=20):
 
 
 def carica_lingue():
-    with open(DATA / "lingua_nodi.csv", newline="") as f:
+    with open(ELAB / "lingua_nodi.csv", newline="") as f:
         return dict(csv.reader(f))
 
 
 def carica_nomi_cluster():
-    """cluster -> (tema, macro, debole). File compilato a mano: data_collection/data/nomi_cluster.csv"""
-    with open(DATA / "nomi_cluster.csv", newline="") as f:
+    """cluster -> (tema, macro, debole). File compilato a mano: data_collection/data/elaborazione/nomi_cluster.csv"""
+    with open(ELAB / "nomi_cluster.csv", newline="") as f:
         r = csv.DictReader(f)
         return {int(x["cluster"]): (x["tema"].strip(), x["macro"].strip(),
                                     x["debole"].strip().lower() in ("si", "sì", "s", "1", "yes"))

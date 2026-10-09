@@ -5,13 +5,13 @@ Uscita: data/testi_extra.jsonl"""
 import sys, json, csv, os, time, requests
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from comune import DATA, carica_nomi_cluster
+from comune import RACCOLTA, ELAB, carica_nomi_cluster
 
-OUT, STATO = DATA / "testi_extra.jsonl", DATA / "stato_extra.json"
+OUT, STATO = RACCOLTA / "testi_extra.jsonl", RACCOLTA / "stato_extra.json"
 HEAD = {"User-Agent": "Mozilla/5.0 (ricerca accademica UniPi)", "Accept": "application/json"}
-# cluster deboli = quelli marcati debole=si in data_collection/data/nomi_cluster.csv
+# cluster deboli = quelli marcati debole=si in data_collection/data/elaborazione/nomi_cluster.csv
 deboli = {c for c, (_, _, deb) in carica_nomi_cluster().items() if deb}
-da_rifare = [u for u, c in csv.reader(open(DATA / "cluster_nodi.csv")) if int(c) in deboli]
+da_rifare = [u for u, c in csv.reader(open(ELAB / "cluster_nodi.csv")) if int(c) in deboli]
 
 
 fatti = set(json.load(open(STATO))) if STATO.exists() else set()

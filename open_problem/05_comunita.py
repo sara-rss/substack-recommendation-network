@@ -1,8 +1,10 @@
-"""PARTE 4.1 - Community detection con Louvain.
+"""PARTE 4.1 - Community detection con Louvain. ESEGUITO UNA VOLTA: la partizione usata nel report
+e' salvata in data/elaborazione/comunita.csv. Rilanciandolo si ottiene una partizione equivalente
+ma non identica (Louvain dipende anche dall'ordine degli archi): vedi 06_stabilita_comunita.py.
 Louvain contiene una componente casuale: due esecuzioni danno partizioni un po' diverse.
 Per non far dipendere i risultati da un seed fortunato, lo eseguo N_RUN volte e tengo come
 PARTIZIONE DI RIFERIMENTO quella piu' "centrale", cioe' la piu' simile in media a tutte le
-altre (NMI medio massimo). Uscita: data_collection/data/comunita.csv"""
+altre (NMI medio massimo). Uscita: data/elaborazione/comunita.csv"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -10,7 +12,7 @@ import csv, random
 import numpy as np, igraph as ig
 from collections import Counter
 from sklearn.metrics import normalized_mutual_info_score as nmi
-from comune import DATA, carica_grafo
+from comune import ELAB, carica_grafo
 
 N_RUN = 30
 G = carica_grafo()
@@ -38,7 +40,7 @@ print(f"Comunita' principali (>=100 nodi): {len(grandi)}, "
       f"che coprono il {100*sum(dim[c] for c in grandi)/len(part):.1f}% dei nodi")
 print("Dimensioni:", sorted(dim.values(), reverse=True))
 
-with open(DATA / "comunita.csv", "w", newline="") as f:
+with open(ELAB / "comunita.csv", "w", newline="") as f:
     w = csv.writer(f); w.writerow(["url", "comunita"])
     w.writerows(zip(nodi, part))
 print("Salvato comunita.csv")

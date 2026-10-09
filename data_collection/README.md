@@ -13,11 +13,11 @@ nodo conosciamo tutte le raccomandazioni in uscita. I nodi solo "scoperti" (in c
 
 | Script | Cosa fa |
 |---|---|
-| `01_crawl.py` | crawl con checkpoint e ripresa automatica → `data/archi.csv`, `data/stato.json` |
+| `01_crawl.py` | crawl con checkpoint e ripresa automatica → `data/raccolta/raccomandazioni_grezze.csv`, `data/raccolta/stato_crawl.json` |
 | `02_riprova_falliti.py` | riprova i nodi la cui richiesta era fallita; chi fallisce ancora viene escluso |
-| `03_costruisci_rete.py` | sottografo indotto → `data/rete_finale.csv`, `data/nodi_finali.csv` |
-| `04_scarica_testi.py` | titolo+sottotitolo degli ultimi 10 post di ogni nodo → `data/testi.jsonl` |
-| `05_scarica_corpo.py` | inizio del corpo dei post per i nodi tematicamente "deboli" → `data/testi_extra.jsonl` |
+| `03_costruisci_rete.py` | sottografo indotto → `data/archi.csv`, `data/nodi.csv` |
+| `04_scarica_testi.py` | titolo+sottotitolo degli ultimi 10 post di ogni nodo → `data/raccolta/testi.jsonl` |
+| `05_scarica_corpo.py` | inizio del corpo dei post per i nodi tematicamente "deboli" → `data/raccolta/testi_extra.jsonl` |
 | `06_verifica_testi.py` | controllo di copertura dei testi |
 | `esplorazione/` | prove iniziali dell'API (mostrano, tra l'altro, che la categoria ufficiale non è esposta) |
 
@@ -28,15 +28,26 @@ nodo conosciamo tutte le raccomandazioni in uscita. I nodi solo "scoperti" (in c
 - Gli attributi tematici sono ricavati dal testo (vedi `open_problem/`), perché la categoria ufficiale non è accessibile.
 
 **Dati** (`data/`, compressi in `data.zip`)
+
+*Dataset finale* — quello da usare per qualsiasi analisi:
 | File | Contenuto |
 |---|---|
-| `archi.csv` | tutte le raccomandazioni raccolte dal crawl (dirette, anche verso nodi non espansi) |
-| `stato.json` | stato finale del crawl: nodi espansi, scoperti, in coda, falliti |
-| `rete_finale.csv`, `nodi_finali.csv` | **la rete analizzata**: archi diretti tra nodi espansi e lista dei nodi |
-| `testi.jsonl`, `testi_extra.jsonl` | titoli/sottotitoli degli ultimi post; corpo dei post per i nodi tematicamente deboli |
+| `nodi.csv` | una riga per newsletter: `url`, `seed` (1 = newsletter di partenza), `lingua`, `tema`, `macro_tema`, `comunita`, `comunita_etichetta`, `grado`, `in_degree`, `out_degree` |
+| `archi.csv` | una riga per raccomandazione: `sorgente` raccomanda `destinazione`; `reciproca` = 1 se anche `destinazione` raccomanda `sorgente` |
+| `grafo_finale.gexf` | la rete non diretta con gli stessi attributi, per Gephi |
+
+*`raccolta/`* — dati grezzi, come prodotti dagli script di scraping:
+| File | Contenuto |
+|---|---|
+| `raccomandazioni_grezze.csv` | tutte le raccomandazioni raccolte dal crawl, anche verso newsletter non espanse |
+| `stato_crawl.json` | stato finale del crawl: nodi espansi, scoperti, in coda, falliti |
+| `testi.jsonl`, `testi_extra.jsonl` | titoli/sottotitoli degli ultimi 10 post; corpo dei post per i nodi tematicamente deboli |
 | `stato_testi.json`, `stato_extra.json` | checkpoint dei due download dei testi |
+
+*`elaborazione/`* — file intermedi della pipeline (i loro contenuti confluiscono in `nodi.csv`):
+| File | Contenuto |
+|---|---|
 | `lingua_nodi.csv` | lingua di ogni newsletter |
 | `cluster_nodi.csv`, `nomi_cluster.csv` | cluster tematico di ogni nodo (congelato) e nome/macro-categoria di ogni cluster (assegnati a mano) |
-| `temi_finali.csv`, `attributi_nodi.csv` | tema dopo il recupero col corpo; **attributi finali** (tema fine e macro-categoria) |
+| `temi_finali.csv`, `attributi_nodi.csv` | tema dopo il recupero col corpo; tema finale e macro-categoria |
 | `comunita.csv` | comunità di riferimento (Louvain) |
-| `grafo_finale.gexf` | rete per Gephi con lingua, tema, macro-categoria e comunità |

@@ -2,12 +2,12 @@
 import sys, json
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from comune import DATA
+from comune import RACCOLTA
 
 tot = con_testo = senza = errori = 0
 distribuzione = {}
 
-for riga in open(DATA / "testi.jsonl"):
+for riga in open(RACCOLTA / "testi.jsonl"):
     d = json.loads(riga)
     tot += 1
     n = d.get("n_post", 0)

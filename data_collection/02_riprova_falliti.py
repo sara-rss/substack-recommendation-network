@@ -1,14 +1,14 @@
 """PARTE 1 - Secondo tentativo sui nodi la cui richiesta era fallita durante il crawl
 (interruzione di connettivita'). Chi riesce passa tra gli espansi e i suoi archi vengono
-aggiunti ad archi.csv; chi fallisce ancora resta tra i falliti e verra' ESCLUSO dalla
+aggiunti a raccomandazioni_grezze.csv; chi fallisce ancora resta tra i falliti e verra' ESCLUSO dalla
 rete finale da 03_costruisci_rete.py (non avremmo dati completi su di lui)."""
 import sys, time, csv, json, os
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from comune import DATA
+from comune import RACCOLTA
 from substack_api import Newsletter
 
-STATO, ARCHI = DATA / "stato.json", DATA / "archi.csv"
+STATO, ARCHI = RACCOLTA / "stato_crawl.json", RACCOLTA / "raccomandazioni_grezze.csv"
 TENTATIVI, PAUSA = 3, 3
 
 

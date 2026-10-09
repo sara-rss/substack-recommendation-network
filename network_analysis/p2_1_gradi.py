@@ -72,4 +72,18 @@ fit.truncated_power_law.plot_ccdf(color="orange", linestyle=":", label="power la
 plt.xlabel("Grado (k)"); plt.ylabel("P(K ≥ k)"); plt.legend()
 plt.title(f"Coda della distribuzione del grado (k ≥ {fit.xmin:.0f})")
 plt.tight_layout(); plt.savefig(PLOT_NA / "grado_ccdf_fit.png", dpi=150); plt.close()
+
+# figura nello stile del notebook del corso: P(k), CDF e CCDF con i fit
+fig, ax = plt.subplots(1, 3, figsize=(15, 4.5))
+c = Counter(gradi); k = sorted(c)
+ax[0].scatter(k, [c[x] for x in k], s=8, color="blue")
+ax[0].set_xscale("log"); ax[0].set_yscale("log")
+ax[0].set_xlabel("Degree"); ax[0].set_ylabel("P(k)")
+fit.plot_cdf(ax=ax[1], original_data=True)
+ax[1].set_xlabel("Degree"); ax[1].set_ylabel("CDF")
+fit.plot_ccdf(ax=ax[2], label="data (k >= k_min)")
+fit.power_law.plot_ccdf(ax=ax[2], color="r", linestyle="--", label=f"power law (alpha={fit.alpha:.2f})")
+fit.lognormal.plot_ccdf(ax=ax[2], color="seagreen", label="lognormal")
+ax[2].set_xlabel("Degree"); ax[2].set_ylabel("CCDF"); ax[2].legend()
+plt.tight_layout(); plt.savefig(PLOT_NA / "grado_distribuzione.png", dpi=150); plt.close()
 print("\nSalvati: grado_lineare.png, grado_loglog.png, grado_ccdf_fit.png, gradi.json")

@@ -13,8 +13,7 @@ nei risultati. Nessun file prodotto qui viene usato dagli altri script.
     label (si nasconde la loro label e si guarda se il tema dominante della comunita' coincide).
     E' un'indicazione di quanto la struttura della rete "contenga" l'informazione mancante,
     non un'assegnazione di tema.
-Uscita: plots/label_mancanti_per_comunita.csv, plots/label_mancanti_comunita.png,
-        plots/label_mancanti_grado.png"""
+Uscita: plots/label_mancanti_per_comunita.csv, plots/label_mancanti_grado.png"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -80,12 +79,47 @@ tipi = sorted({st[u] for u in manca})
 print("Grado mediano per tipo di label mancante:",
       ", ".join(f"{t} {np.median([G.degree(u) for u in manca if st[u] == t]):.0f}" for t in tipi))
 
-plt.figure(figsize=(6, 4))
-plt.bar(x_f, y_f, color="gray")
-plt.axhline(100 * len(manca) / N, color="crimson", linestyle="--", label="media della rete")
-plt.xlabel("Grado"); plt.ylabel("% di nodi senza label"); plt.legend()
-plt.title("Label mancanti per fascia di grado")
-plt.tight_layout(); plt.savefig(PLOT_OP / "label_mancanti_grado.png", dpi=150); plt.close()
+# ---- figura per il report (etichette in inglese) ----
+ORDINE = [("senza testo", "No text", "#2a78d6"),
+          ("titoli generici", "Generic titles", "#eb6834"),
+          ("altra lingua", "Non-English", "#1baf7a"),
+          ("video/podcast", "Video / podcast", "#eda100")]   # palette leggibile anche dai daltonici
+media = 100 * len(manca) / N
+quote = {t: [] for t, _, _ in ORDINE}
+n_f = []
+for lo, hi in fasce:
+    gruppo = [u for u in nodi if lo <= G.degree(u) <= hi]
+    n_f.append(len(gruppo))
+    for t, _, _ in ORDINE:
+        quote[t].append(100 * sum(st[u] == t for u in gruppo) / len(gruppo))
+
+INK, INK2, GRIGIO = "#0b0b0b", "#52514e", "#e4e3df"
+plt.rcParams.update({"font.size": 8, "axes.edgecolor": INK2, "xtick.color": INK2, "ytick.color": INK2})
+fig, ax = plt.subplots(figsize=(3.4, 2.6))
+x = np.arange(len(fasce))
+base = np.zeros(len(fasce))
+for t, nome, col in ORDINE:
+    ax.bar(x, quote[t], bottom=base, width=0.7, color=col, edgecolor="white",
+           linewidth=0.8, label=nome, zorder=3)
+    base += np.array(quote[t])
+for i, tot in enumerate(y_f):                      # totale sopra ogni barra
+    ax.text(i, tot + 0.8, f"{tot:.0f}%", ha="center", va="bottom", fontsize=7, color=INK,
+            zorder=5, bbox=dict(facecolor="white", edgecolor="none", pad=0.6))
+ax.axhline(media, color=INK2, linestyle=(0, (4, 3)), linewidth=0.9, zorder=4)
+ax.text(len(fasce) - 0.55, media + 0.8, f"network average {media:.1f}%",
+        ha="right", va="bottom", fontsize=7, color=INK2)
+ax.set_xticks(x)
+ax.set_xticklabels([f"{e.replace('-', '–')}\n{n:,}" for e, n in zip(x_f, n_f)], fontsize=7)
+ax.text(-0.75, -0.083, "n =", transform=ax.get_xaxis_transform(),
+        ha="right", va="top", fontsize=7, color=INK2)
+ax.set_xlabel("Degree", labelpad=4)
+ax.set_ylabel("Newsletters without a topic (%)")
+ax.set_ylim(0, max(y_f) * 1.18); ax.set_xlim(-0.6, len(fasce) - 0.4)
+ax.yaxis.grid(True, color=GRIGIO, linewidth=0.6, zorder=0)
+ax.spines[["top", "right"]].set_visible(False); ax.tick_params(length=0)
+ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.17), ncol=4, frameon=False, fontsize=6.5,
+          handlelength=1, handletextpad=0.4, columnspacing=0.9)
+plt.savefig(PLOT_OP / "label_mancanti_grado.png", dpi=300, bbox_inches="tight"); plt.close()
 
 # ---------------- C. distribuzione tra le comunita' ----------------
 print("\n=== C. DISTRIBUZIONE TRA LE COMUNITA' ===")
@@ -130,19 +164,6 @@ with open(PLOT_OP / "label_mancanti_per_comunita.csv", "w", newline="") as f:
                + [f"n_{t.replace(' ', '_')}" for t in tipi])
     w.writerows(righe)
 
-# grafico: quota di label mancanti per comunita', divisa per tipo
-fig, ax = plt.subplots(figsize=(9, 4.5))
-base = np.zeros(len(grandi))
-colori = plt.cm.Set2(np.arange(len(tipi)))
-for t, col in zip(tipi, colori):
-    val = np.array([100 * sum(st[u] == t for u in membri[c]) / len(membri[c]) for c in grandi])
-    ax.bar([str(c) for c in grandi], val, bottom=base, label=t, color=col); base += val
-ax.axhline(100 * len(manca) / N, color="crimson", linestyle="--", label="media della rete")
-ax.set_xticks(range(len(grandi)))
-ax.set_xticklabels([f"{c}\n{profilo(c)[0][:10]}" for c in grandi], fontsize=7)
-ax.set_ylabel("% di nodi senza label"); ax.legend(fontsize=7)
-ax.set_title("Label mancanti nelle comunita' principali (sotto: tema dominante)")
-plt.tight_layout(); plt.savefig(PLOT_OP / "label_mancanti_comunita.png", dpi=150); plt.close()
 
 # ---------------- D. associazione a livello di comunita' ----------------
 print("\n=== D. SI PUO' ASSOCIARE UN TEMA AI NODI SENZA LABEL TRAMITE LA LORO COMUNITA'? ===")

@@ -1,15 +1,16 @@
 """PARTE 1 - Crawling a palla di neve (snowball) delle raccomandazioni Substack.
 Parte da 15 newsletter seed e segue le raccomandazioni in ampiezza (BFS).
 Salva un checkpoint ogni 100 nodi: se si interrompe, rilanciandolo riprende da dove era.
-Uscita: data/archi.csv (archi diretti) e data/stato.json (stato del crawl)."""
+Uscita: data/raccolta/raccomandazioni_grezze.csv (tutte le raccomandazioni raccolte)
+e data/raccolta/stato_crawl.json (stato del crawl: nodi espansi, scoperti, in coda, falliti)."""
 import sys, time, csv, json, os
 from collections import deque
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from comune import DATA
+from comune import SEED, RACCOLTA
 from substack_api import Newsletter
 
-STATO, ARCHI = DATA / "stato.json", DATA / "archi.csv"
+STATO, ARCHI = RACCOLTA / "stato_crawl.json", RACCOLTA / "raccomandazioni_grezze.csv"
 MAX, PAUSA, CHECKPOINT = 20000, 1, 100
 
 
@@ -20,23 +21,7 @@ def sistema(url):
     return u.replace("http://", "https://").replace("://www.", "://")
 
 
-seed = [sistema(u) for u in [
-    "https://georgesaunders.substack.com",
-    "https://footnotesandtangents.substack.com",
-    "https://pandorasykes.substack.com",          # letteratura
-    "https://greenwald.substack.com",
-    "https://samf.substack.com",
-    "https://chrishedges.substack.com",           # politica
-    "https://natesnewsletter.substack.com",
-    "https://newsletter.pragmaticengineer.com",
-    "https://damnang2.substack.com",              # tecnologia
-    "https://michaeljburry.substack.com",
-    "https://capitalwars.substack.com",
-    "https://charliepgarcia.substack.com",        # finanza
-    "https://yourlocalepidemiologist.substack.com",
-    "https://theskepticalcardiologist.substack.com",
-    "https://theunbiasedscipod.substack.com",     # scienza
-]]
+seed = [sistema(u) for u in SEED]            # 15 seed, 3 per area (definiti in comune.py)
 
 if STATO.exists():
     s = json.load(open(STATO))

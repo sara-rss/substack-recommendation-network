@@ -3,3 +3,4 @@ __pycache__/
 .DS_Store
 data_collection/data/
 !data_collection/data.zip
+data_collection/data.zip

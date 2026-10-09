@@ -5,14 +5,14 @@ import sys, json, random
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from collections import Counter, defaultdict
-from comune import DATA, carica_grafo, carica_attributi, carica_comunita, corto
+from comune import RACCOLTA, carica_grafo, carica_attributi, carica_comunita, corto
 
 N_ESEMPI, MIN_PUREZZA = 6, 0.6
 CASI_NOTI = ["100xfarm", "5mwpress", "10am.pro"]
 
 G = carica_grafo(); tema, macro = carica_attributi(); com = carica_comunita()
 titoli = {}
-for riga in open(DATA / "testi.jsonl"):
+for riga in open(RACCOLTA / "testi.jsonl"):
     d = json.loads(riga)
     titoli[d["url"]] = [x.get("titolo") or "" for x in d.get("testi", []) if x.get("titolo")]
 senza = {u for u in G if macro.get(u, "unlabeled") == "unlabeled"}

@@ -50,6 +50,15 @@ for u in sorted(nodi, key=lambda u: rk_bt[u])[:50]:
     if rk_deg[u] > 50:
         print(f"  {corto(u):40} grado {G.degree(u):4} (rank {rk_deg[u]:5}) | rank betweenness {rk_bt[u]}")
 
-json.dump({"degree": deg, "pagerank": pr, "pagerank_diretto": pr_dir, "betweenness": bt},
+# closeness: quanto un nodo e' vicino, in media, a tutti gli altri (esatta, con igraph)
+cl = {u: c for u, c in zip(_nodi, _g.closeness())}
+top10(cl, "closeness")
+rk_cl = {u: i + 1 for i, u in enumerate(sorted(nodi, key=lambda u: -cl[u]))}
+print("\nSpearman degree vs closeness:",
+      round(spearmanr([deg[u] for u in nodi], [cl[u] for u in nodi])[0], 3))
+print("In top 10 closeness ma non in top 10 degree:",
+      [(corto(u), G.degree(u), rk_deg[u]) for u in sorted(nodi, key=lambda u: rk_cl[u])[:10] if rk_deg[u] > 10])
+
+json.dump({"degree": deg, "pagerank": pr, "pagerank_diretto": pr_dir, "betweenness": bt, "closeness": cl},
           open(PLOT_NA / "centralita.json", "w"))
 print("\nSalvato centralita.json")
