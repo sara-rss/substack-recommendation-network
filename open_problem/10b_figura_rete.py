@@ -1,10 +1,4 @@
-"""Figura della rete per il report (larghezza testo a due colonne, 7.16 in, 600 dpi).
-Legge data/nodi.csv (scritto da 10_grafo_gexf.py), data/posizioni_fa2.csv (layout congelato) e la rete
-non diretta da comune.carica_grafo(); colori, nomi e dimensioni da stile_rete.py.
-Produce in open_problem/plots/:
-  rete_comunita.png       tutti i nodi
-  rete_comunita_wide.png  inquadratura piu' bassa: taglia in verticale lo 0.12% dei nodi piu'
-                          estremi (code 'Other (marginal)'), da segnalare in didascalia."""
+"""Figura della rete per il report"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

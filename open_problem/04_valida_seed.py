@@ -1,4 +1,4 @@
-"""ATTRIBUTI 4/4 - Validazione: i 15 seed hanno una categoria nota (scelta a mano).
+"""Validazione: i 15 seed hanno una categoria nota scelta a mano
 Controllo se la classificazione automatica li mette nella macro-categoria giusta."""
 import sys
 from pathlib import Path

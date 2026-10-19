@@ -1,10 +1,6 @@
-"""Stile condiviso della rete: nomi inglesi, colori e dimensioni dei nodi.
-Unica fonte per open_problem/10_grafo_gexf.py (GEXF per Gephi) e open_problem/12_figura_rete.py
-(figura del report),
-cosi' Gephi e la figura mostrano esattamente gli stessi colori e la stessa legenda."""
+"""Stile condiviso della rete: nomi inglesi, colori e dimensioni dei nodi, così Gephi e la figura mostrano esattamente gli stessi colori e la stessa legenda."""
 
-# (etichetta in comunita_etichette.csv, nome inglese per legenda e tabelle, colore)
-# L'ordine e' quello della legenda.
+# Una riga per comunità, le righe sono nell'ordine in cui compaiono nella legenda
 COMUNITA = [
     ("startup / tech / AI (costruire)",            "Start-ups & technology",    "#2B7BC4"),
     ("literary & personal essay",                  "Literary & personal essay", "#E3328C"),
@@ -30,13 +26,7 @@ def rgb(hex_colore):
     h = hex_colore.lstrip("#")
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
 
-# Layout: ForceAtlas2 di Gephi 0.11.2 (Toolkit), calcolato una sola volta e congelato in
-# data_collection/data/posizioni_fa2.csv (come cluster_nodi.csv: Gephi non e' riproducibile da Python).
-#   modalita' standard (LinLog off), scaling 10, gravity 4, strong gravity off,
-#   Barnes-Hut theta 1.2, edge weight influence 1, dissuade hubs off;
-#   init casuale in un disco (seed 42), 2000 iterazioni + 150 con Prevent Overlap.
+# Layout: ForceAtlas2 di Gephi
 FILE_POSIZIONI = "posizioni_fa2.csv"
 
-# Anteprima Gephi equivalente alla figura: archi dritti, colore = sorgente, opacita' 25%,
-# spessore 0.3, rescale weight off, bordo nodi 0, etichette off, sfondo bianco.
 OPACITA_ARCHI = 0.20      # alpha degli archi nella figura matplotlib

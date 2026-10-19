@@ -1,35 +1,51 @@
-# Substack recommendation network — SNA Final Project 2026
 
-**Sara Rossi** (matricola 637107) — progetto individuale (Parte 3 omessa come da regolamento).
 
-Rete delle **raccomandazioni tra newsletter Substack**: i nodi sono newsletter, un arco A→B significa
-"A raccomanda B ai propri lettori". Domanda di ricerca (Parte 4): *le raccomandazioni dividono le
-newsletter per argomento o secondo confini più fini (per esempio ideologici) che dal testo non si vedono?*
+# Beyond Topics: Uncovering Subcommunities in Substack's Recommendation Network
 
-## Struttura
-| Percorso | Contenuto |
-|---|---|
-| `data_collection/` | crawling, costruzione della rete, scaricamento dei testi |
-| `data_collection/data/` | **tutti i dati** (compressi in `data_collection/data.zip`): il dataset finale `nodi.csv` + `archi.csv` + `grafo_finale.gexf`, i dati grezzi in `raccolta/`, i file intermedi in `elaborazione/` |
-| `network_analysis/` | Parte 2: gradi, componenti, cammini, clustering, centralità, confronto ER/BA |
-| `open_problem/` | attributi tematici dei nodi e Parte 4 |
-| `network_analysis/plots/`, `open_problem/plots/` | figure e tabelle di risultati |
-| `report/` | report finale |
-| `comune.py` | percorsi e funzioni di caricamento condivise da tutti gli script |
+> **Sara Rossi** | Social Network Analysis, University of Pisa (2025/26)  
+> *Individual Project • Student ID: 637107*
 
-## Come riprodurre i risultati
-```
-pip install -r requirements.txt
-unzip data_collection/data.zip -d data_collection/
-```
-Gli script si lanciano da dentro la loro cartella, nell'ordine del numero nel nome. I passi di
-scraping (⏳) richiedono ore e i loro risultati sono già nei dati; il clustering tematico (✱) è
-eseguito una sola volta e il suo risultato è congelato in `data/elaborazione/cluster_nodi.csv`. Per riprodurre
-le analisi basta quindi partire dal punto 4.
+![Substack Recommendation Network Visualization](open_problem/plots/rete_comunita.png)
 
-1. `data_collection/`: `01_crawl.py` ⏳ → `02_riprova_falliti.py` → `03_costruisci_rete.py` → `04_scarica_testi.py` ⏳ → `06_verifica_testi.py`
-2. `open_problem/01_clustering_temi.py` ✱ (poi i nomi dei cluster si assegnano a mano in `data/elaborazione/nomi_cluster.csv`); `00_scegli_k.py` documenta la scelta di k
-3. `data_collection/05_scarica_corpo.py` ⏳
-4. `open_problem/`: `02_riclassifica_corpo.py` → `03_riclassifica_dizionario.py` → `04_valida_seed.py`
-5. `network_analysis/`: `p2_1_gradi.py` … `p2_6_confronto.py` (indipendenti tra loro)
-6. `open_problem/`: `05_comunita.py` → `06_stabilita_comunita.py` → `07_comunita_vs_temi.py` → `08_profilo_comunita.py` → `09_label_mancanti.py` → `10_esporta_rete.py` → `11_esempi_label_mancanti.py` → `12_controllo_coerenza.py`
+## Open Problem
+
+On Substack, a recommendation is not just an algorithmic suggestion; it is a deliberate editorial endorsement. When authors recommend another newsletter, they actively direct their hard-earned readership elsewhere. 
+
+This project maps that web of endorsements from scratch to answer one compelling question:
+
+> ### Do newsletters recommend based on *what* they write about, or *who* they agree with?
+
+---
+
+## Methodology
+
+1. **Data Collection**: Executed a breadth-first snowball crawl starting from 15 seed newsletters across 5 domains (literature, politics, technology, finance, health), mapping a network of **15,186 newsletters** and **103,425 recommendations**.
+2. **Topic Inference**: Inferred newsletter topics using TF–IDF and *k*-means clustering on recent post titles and subtitles, then refined the results using post bodies and a custom keyword dictionary.
+3. **Network Characterization**: Analyzed degree distribution, path lengths, clustering, and centrality, benchmarking the real-world network against Erdős–Rényi and Barabási–Albert null models.
+4. **Communities vs. Topics**: Detected communities using the Louvain algorithm (with Leiden stability checks) and compared them against inferred topics, validating significance through a label-permutation null model and deep-dive community inspection.
+
+---
+
+## Key Findings
+
+- **Small-World and Heavy-Tailed**: The network exhibits short path lengths (similar to a random graph) but with a clustering coefficient approximately 200 times higher.
+- **Topic Rules (Mostly)**: In domains like finance and food, recommendations are highly topical. About 90% of newsletters on these subjects fall neatly into a single, dominant community.
+- **Ideology Overrides Topic**: When positions conflict, topic alone is not enough to explain the network. 
+  - *Politics* fractures into three distinct communities (liberal mainstream, heterodox-centrist, and anti-establishment) that cut across finer political sub-topics.
+  - *Health* newsletters critical of COVID-19 vaccines are recommended alongside anti-establishment political commentary, rather than alongside mainstream public-health newsletters.
+
+---
+
+## Tech Stack and Tools
+
+- **Python**: `networkx`, `igraph`, `leidenalg`, `powerlaw`, `scikit-learn`, `langdetect`
+- **Data Acquisition**: Unofficial [`substack-api`](https://github.com/NHagar/substack_api)
+- **Visualization**: Gephi (for network layout and rendering)
+
+---
+
+## Dive Deeper
+
+The complete methodology, results, and detailed visualizations are available in the full project report:  
+[Read the Full Report](report/report_Rossi.pdf)
+

@@ -1,15 +1,6 @@
-"""Ultimo passo: completa il DATASET FINALE in data_collection/data/.
- - nodi.csv: una riga per newsletter con tutti gli attributi
-     url, seed, lingua, tema, macro_tema, comunita, comunita_etichetta, comunita_label,
-     grado, in_degree, out_degree
-   (tema = 'senza_testo' se non c'era testo; macro_tema = 'unlabeled' se il tema non e' ricavabile;
-    comunita_etichetta = 'marginale' per le comunita' con meno di 100 nodi;
-    comunita_label = nome inglese usato in figura e nelle tabelle, da stile_rete.COMUNITA)
- - grafo_finale.gexf: la rete non diretta con gli stessi attributi e lo stile gia' applicato
-   (colore per comunita', dimensione per grado, posizioni ForceAtlas2 da data/posizioni_fa2.csv
-   se presente), da aprire con Gephi.
-archi.csv (sorgente, destinazione, reciproca) e' gia' scritto da data_collection/03_costruisci_rete.py.
-Stile e parametri del layout sono in stile_rete.py (radice della repository), condiviso con 12_figura_rete.py."""
+"""Riscrive nodi.csv aggiungendo lingua, tema, macro_tema, comunità e grado, e salva
+grafo_finale.gexf con lo stile per Gephi. Stile in stile_rete.py
+"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -44,7 +35,7 @@ for col in ["seed", "lingua", "tema", "macro_tema", "comunita", "comunita_etiche
             "grado", "in_degree", "out_degree"]:
     nx.set_node_attributes(G, dict(zip(nodi.url, nodi[col].map(lambda v: v.item() if hasattr(v, "item") else v))), col)
 
-# --- stile Gephi (namespace viz del GEXF): colore, dimensione, posizione ---
+# --- stile Gephi ---
 pos_file = DATA / FILE_POSIZIONI
 pos = pd.read_csv(pos_file).set_index("url") if pos_file.exists() else None
 if pos is not None:

@@ -1,13 +1,16 @@
+"""PROVA - Verifica che l'endpoint pubblico /api/v1/archive restituisca titolo e sottotitolo dei post"""
 import requests, time
 
 HEAD = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
 
+# 5 seed di prova, uno per area
 test = ["https://capitalwars.substack.com",
         "https://chrishedges.substack.com",
         "https://georgesaunders.substack.com",
         "https://natesnewsletter.substack.com",
         "https://yourlocalepidemiologist.substack.com"]
 
+# Per ogni newsletter stampo il numero di post, il publication_id e titolo + sottotitolo dei primi 5 post
 for base in test:
     try:
         r = requests.get(base + "/api/v1/archive?limit=10", headers=HEAD, timeout=15)

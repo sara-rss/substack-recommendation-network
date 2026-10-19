@@ -1,6 +1,5 @@
-"""ATTRIBUTI - Per ogni newsletter della rete scarico titolo e sottotitolo degli ultimi 10 post
-(endpoint pubblico /api/v1/archive). Servono a ricavare il tema della newsletter.
-Con checkpoint: se si interrompe, rilanciandolo riprende. Uscita: data/testi.jsonl"""
+"""SCARICA TITOLI E SOTTOTITOLI - Per ogni newsletter della rete scarico titolo e sottotitolo degli ultimi 10 post
+(endpoint pubblico /api/v1/archive)"""
 import sys, json, os, time, requests
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -9,10 +8,14 @@ from comune import RACCOLTA, lista_nodi
 OUT, STATO = RACCOLTA / "testi.jsonl", RACCOLTA / "stato_testi.json"
 HEAD = {"User-Agent": "Mozilla/5.0 (ricerca accademica UniPi)", "Accept": "application/json"}
 
+# Newsletter della rete e quelle già scaricate in un'esecuzione precedente
 nodi = lista_nodi()
 fatti = set(json.load(open(STATO))) if STATO.exists() else set()
-print(f"{len(nodi)} newsletter, {len(fatti)} gia' scaricate")
+print(f"{len(nodi)} newsletter, {len(fatti)} già scaricate")
 
+# Una riga JSON per newsletter, in append così i risultati precedenti restano.
+# Se la richiesta fallisce salvo comunque una riga con l'errore e la newsletter conta come fatta
+# Ogni 100 newsletter forzo la scrittura su disco e aggiorno lo stato
 f = open(OUT, "a")
 try:
     for url in nodi:
@@ -35,6 +38,7 @@ try:
             json.dump(list(fatti), open(STATO, "w"))
             print(f"{len(fatti)}/{len(nodi)}")
         time.sleep(1)
+# Salvo tutto anche in caso di errore o interruzione manuale (Ctrl+C)
 finally:
     f.flush(); os.fsync(f.fileno()); f.close()
     json.dump(list(fatti), open(STATO, "w"))

@@ -1,19 +1,15 @@
-"""PARTE 4.5 - Analisi delle LABEL MANCANTI (discussione a margine, NON riclassificazione).
-Una parte dei nodi non ha un tema ricavabile dal testo. Qui non si prova ad assegnarglielo:
-si studia COME sono distribuite le label mancanti, per capire se introducono una distorsione
-nei risultati. Nessun file prodotto qui viene usato dagli altri script.
+"""Parte 4.5: Missing label
 
- A. Composizione: perche' manca la label (senza testo, titoli generici, altra lingua, video...).
- B. Posizione nella rete: i nodi senza label sono periferici (grado basso) o anche hub?
- C. Distribuzione tra le comunita': le label mancanti sono sparse uniformemente o concentrate
-    in alcune comunita'? (test del chi quadro). Se sono concentrate, le comunita' interessate
-    sono descritte peggio delle altre e il legame comunita'-tema e' stimato con meno dati.
- D. Associazione a livello di comunita': un nodo senza label cade in una comunita' con un tema
-    nettamente dominante? Quanto e' affidabile questa associazione? La si stima sui nodi CON
-    label (si nasconde la loro label e si guarda se il tema dominante della comunita' coincide).
-    E' un'indicazione di quanto la struttura della rete "contenga" l'informazione mancante,
-    non un'assegnazione di tema.
-Uscita: plots/label_mancanti_per_comunita.csv, plots/label_mancanti_grado.png"""
+Si analizza come sono distribuite le label mancanti 
+
+Controlli:
+- perché manca la label
+- dove stanno nella rete
+- se sono sparse tra le comunità o concentrate in alcune
+- se un nodo senza label cade in una comunità con un tema dominante, e quanto ci si può
+  fidare: lo stimo sui nodi con label, nascondendola e guardando se coincide col tema
+  dominante della comunità
+"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -25,9 +21,11 @@ from collections import Counter, defaultdict
 from scipy.stats import chi2_contingency, mannwhitneyu
 from comune import carica_grafo, carica_attributi, carica_comunita, PLOT_OP
 
-MIN_NODI = 100                       # comunita' "principali"
+MIN_NODI = 100                       # soglia per le comunità principali
 SOGLIE_PUREZZA = [0.5, 0.6, 0.7, 0.8]
-TIPO = {                             # perche' manca la label
+
+# perché manca la label
+TIPO = {
     "senza_testo": "senza testo", "generic": "titoli generici", "non_english": "altra lingua",
     "media_video": "video/podcast", "coming_soon": "titoli generici", "date_only": "titoli generici",
     "portuguese": "altra lingua", "spanish": "altra lingua",
@@ -37,8 +35,8 @@ G = carica_grafo(); tema, macro = carica_attributi(); com = carica_comunita()
 nodi = list(G)
 
 
+# "label" se il nodo ha un tema utile, altrimenti il motivo per cui manca
 def stato(u):
-    """'label' | tipo di label mancante"""
     if u not in tema:
         return "senza testo"
     if macro[u] == "unlabeled":
@@ -50,22 +48,27 @@ st = {u: stato(u) for u in nodi}
 manca = {u for u in nodi if st[u] != "label"}
 N = len(nodi)
 
-# ---------------- A. composizione ----------------
+
+# quanti nodi senza label e perché
 print(f"=== A. COMPOSIZIONE ===\nNodi: {N} | con label: {N - len(manca)} | "
       f"senza label: {len(manca)} ({100*len(manca)/N:.1f}%)")
 for t, n in Counter(st[u] for u in manca).most_common():
     print(f"  {t:16} {n:6} ({100*n/N:.1f}% della rete)")
+# i "personal" hanno una label ma contano poco
 vaghe = sum(1 for u in nodi if tema.get(u) == "personal")
 print(f"  (a parte: {vaghe} nodi 'personal' hanno una label ma vaga, {100*vaghe/N:.1f}%)")
 
-# ---------------- B. posizione nella rete ----------------
+
+# confronto il grado di chi ha la label e di chi non ce l'ha
 print("\n=== B. POSIZIONE NELLA RETE ===")
 g_lab = np.array([G.degree(u) for u in nodi if u not in manca])
 g_man = np.array([G.degree(u) for u in manca])
-p = mannwhitneyu(g_man, g_lab, alternative="less").pvalue
+p = mannwhitneyu(g_man, g_lab, alternative="less").pvalue  
 print(f"Grado mediano: con label {np.median(g_lab):.0f} | senza label {np.median(g_man):.0f} "
       f"(Mann-Whitney, senza < con: p = {p:.1e})")
 print(f"Grado medio:   con label {g_lab.mean():.1f} | senza label {g_man.mean():.1f}")
+
+# quota di nodi senza label in ogni fascia di grado
 print("Quota di nodi senza label per fascia di grado:")
 fasce = [(1, 1), (2, 3), (4, 6), (7, 12), (13, 25), (26, 50), (51, 10**6)]
 x_f, y_f = [], []
@@ -79,11 +82,11 @@ tipi = sorted({st[u] for u in manca})
 print("Grado mediano per tipo di label mancante:",
       ", ".join(f"{t} {np.median([G.degree(u) for u in manca if st[u] == t]):.0f}" for t in tipi))
 
-# ---- figura per il report (etichette in inglese) ----
+# ---- figura per il report ----
 ORDINE = [("senza testo", "No text", "#2a78d6"),
           ("titoli generici", "Generic titles", "#eb6834"),
           ("altra lingua", "Non-English", "#1baf7a"),
-          ("video/podcast", "Video / podcast", "#eda100")]   # palette leggibile anche dai daltonici
+          ("video/podcast", "Video / podcast", "#eda100")]
 media = 100 * len(manca) / N
 quote = {t: [] for t, _, _ in ORDINE}
 n_f = []
@@ -102,12 +105,14 @@ for t, nome, col in ORDINE:
     ax.bar(x, quote[t], bottom=base, width=0.7, color=col, edgecolor="white",
            linewidth=0.8, label=nome, zorder=3)
     base += np.array(quote[t])
-for i, tot in enumerate(y_f):                      # totale sopra ogni barra
+for i, tot in enumerate(y_f):                     
     ax.text(i, tot + 0.8, f"{tot:.0f}%", ha="center", va="bottom", fontsize=7, color=INK,
             zorder=5, bbox=dict(facecolor="white", edgecolor="none", pad=0.6))
+
 ax.axhline(media, color=INK2, linestyle=(0, (4, 3)), linewidth=0.9, zorder=4)
 ax.text(len(fasce) - 0.55, media + 0.8, f"network average {media:.1f}%",
         ha="right", va="bottom", fontsize=7, color=INK2)
+
 ax.set_xticks(x)
 ax.set_xticklabels([f"{e.replace('-', '–')}\n{n:,}" for e, n in zip(x_f, n_f)], fontsize=7)
 ax.text(-0.75, -0.083, "n =", transform=ax.get_xaxis_transform(),
@@ -121,21 +126,25 @@ ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.17), ncol=4, frameon=False,
           handlelength=1, handletextpad=0.4, columnspacing=0.9)
 plt.savefig(PLOT_OP / "label_mancanti_grado.png", dpi=300, bbox_inches="tight"); plt.close()
 
-# ---------------- C. distribuzione tra le comunita' ----------------
-print("\n=== C. DISTRIBUZIONE TRA LE COMUNITA' ===")
+# ---------------- distribuzione tra le comunità ----------------
+print("\n=== C. DISTRIBUZIONE TRA LE COMUNITÀ ===")
 membri = defaultdict(list)
 for u in nodi:
     membri[com[u]].append(u)
 grandi = sorted((c for c in membri if len(membri[c]) >= MIN_NODI), key=lambda c: -len(membri[c]))
+
+# tabella comunità 
+# se le label mancanti fossero sparse a caso la quota sarebbe simile in tutte le comunità
 tab = np.array([[sum(st[u] == "label" for u in membri[c]), sum(st[u] != "label" for u in membri[c])]
                 for c in grandi])
 chi2, p, dof, _ = chi2_contingency(tab)
-# V di Cramer: intensita' dell'associazione (0 = nessuna, 1 = massima)
+# V di Cramer: quanto è forte l'associazione 
 v = np.sqrt(chi2 / tab.sum())
-print(f"Chi quadro (label mancante x comunita', {len(grandi)} comunita' principali): "
+print(f"Chi quadro (label mancante x comunità, {len(grandi)} comunità principali): "
       f"chi2 = {chi2:.0f}, p = {p:.1e}, V di Cramer = {v:.2f}")
 
 
+# tema dominante di una comunità e sua purezza con solo i nodi con label
 def profilo(c):
     lab = Counter(macro[u] for u in membri[c] if st[u] == "label")
     if not lab:
@@ -144,6 +153,7 @@ def profilo(c):
     return t, n / sum(lab.values())
 
 
+# per ogni comunità principale: quota senza label, tema dominante e motivi più frequenti
 righe = []
 print(f"\n{'com':>4} {'nodi':>6} {'senza label':>12}   tema dominante (purezza sui nodi con label)   tipi di mancanza")
 for c in grandi:
@@ -156,7 +166,7 @@ for c in grandi:
                  + [tipi_c.get(t, 0) for t in tipi])
 piccole = [u for c in membri if c not in grandi for u in membri[c]]
 if piccole:
-    print(f"comunita' marginali: {len(piccole)} nodi, senza label "
+    print(f"comunità marginali: {len(piccole)} nodi, senza label "
           f"{100*sum(st[u] != 'label' for u in piccole)/len(piccole):.1f}%")
 with open(PLOT_OP / "label_mancanti_per_comunita.csv", "w", newline="") as f:
     w = csv.writer(f)
@@ -165,17 +175,17 @@ with open(PLOT_OP / "label_mancanti_per_comunita.csv", "w", newline="") as f:
     w.writerows(righe)
 
 
-# ---------------- D. associazione a livello di comunita' ----------------
-print("\n=== D. SI PUO' ASSOCIARE UN TEMA AI NODI SENZA LABEL TRAMITE LA LORO COMUNITA'? ===")
-print("(stima di affidabilita' sui nodi CON label: nascondo la loro label e confronto con il tema")
-print(" dominante della loro comunita', calcolato senza di loro)")
-# solo comunita' principali: in quelle minuscole togliere un nodo cambia molto la purezza
-# e la stima "lascia fuori un nodo" diventa distorta
+# ---------------- associazione a livello di comunità ----------------
+print("\n=== D. SI PUÒ ASSOCIARE UN TEMA AI NODI SENZA LABEL TRAMITE LA LORO COMUNITÀ? ===")
+print("(stima di affidabilità sui nodi CON label: nascondo la loro label e confronto con il tema")
+print(" dominante della loro comunità, calcolato senza di loro)")
+# solo comunità principali: in quelle minuscole togliere un nodo cambia molto la purezza
 conta = {c: Counter(macro[u] for u in membri[c] if st[u] == "label") for c in membri}
-esiti = []                                   # (purezza della comunita', indovinato?)
+esiti = []                                   
 for u in nodi:
     if st[u] != "label" or com[u] not in grandi:
         continue
+    # tolgo il nodo dal conteggio della sua comunità e guardo se il tema dominante resta il suo
     cnt = conta[com[u]].copy(); cnt[macro[u]] -= 1
     tot = sum(cnt.values())
     if tot == 0:
@@ -183,18 +193,22 @@ for u in nodi:
     t, n = cnt.most_common(1)[0]
     esiti.append((n / tot, t == macro[u]))
 esiti = np.array(esiti, float)
+
+# due valori di confronto: quanto si indovinerebbe a caso e quanto scegliendo sempre il tema più comune
 freq = np.array(list(Counter(macro[u] for u in nodi if st[u] == "label").values()), float)
 freq /= freq.sum()
 print(f"Accordo complessivo: {100*esiti[:, 1].mean():.1f}%  "
-      f"(riferimento casuale: {100*(freq**2).sum():.1f}%; tema piu' frequente: {100*freq.max():.1f}%)")
-print(f"(solo le {len(grandi)} comunita' principali)")
-print(f"\n{'purezza comunita':>18} {'accordo sui nodi con label':>28} {'nodi senza label coinvolti':>28}")
+      f"(riferimento casuale: {100*(freq**2).sum():.1f}%; tema più frequente: {100*freq.max():.1f}%)")
+print(f"(solo le {len(grandi)} comunità principali)")
+
+# per ogni soglia di purezza: quanto spesso il tema della comunità è giusto e quanti nodi senza label ne fanno parte
+print(f"\n{'purezza comunità':>18} {'accordo sui nodi con label':>28} {'nodi senza label coinvolti':>28}")
 for soglia in SOGLIE_PUREZZA:
     sel = esiti[esiti[:, 0] >= soglia]
     n_man = sum(1 for u in manca if com[u] in grandi and profilo(com[u])[1] >= soglia)
     acc = f"{100*sel[:, 1].mean():.1f}% su {len(sel)}" if len(sel) >= 30 else "n.d. (troppo pochi)"
     print(f"{'>= ' + str(int(100*soglia)) + '%':>18} {acc:>28} {n_man:>18} ({100*n_man/len(manca):.0f}%)")
-print("\nLettura: nelle comunita' molto pure il tema della comunita' e' un'indicazione affidabile")
-print("anche per i nodi senza label; nelle comunita' miste no. Resta un'indicazione a margine,")
+print("\nLettura: nelle comunità molto pure il tema della comunità è un'indicazione affidabile")
+print("anche per i nodi senza label; nelle comunità miste no. Resta un'indicazione a margine,")
 print("non una riclassificazione: nessuna label viene assegnata e le analisi principali usano")
 print("solo le label ricavate dal testo.")

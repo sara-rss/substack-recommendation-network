@@ -5,8 +5,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from comune import RACCOLTA
 
 tot = con_testo = senza = errori = 0
-distribuzione = {}
+distribuzione = {}   # {numero di post: quante newsletter ne hanno così tanti}
 
+# Ogni newsletter finisce in una sola delle tre categorie: errore, con post, senza post
 for riga in open(RACCOLTA / "testi.jsonl"):
     d = json.loads(riga)
     tot += 1

@@ -1,53 +1,59 @@
-# Part 1 — Data collection
 
-**Fonte:** Substack, tramite la libreria non ufficiale `substack-api` (raccomandazioni) e
-l'endpoint pubblico `/api/v1/archive` (post). Pausa di 1 s tra le richieste, User-Agent identificativo.
 
-**Nodi** = newsletter. **Archi** = raccomandazioni (dirette: A raccomanda B). È un legame *osservato*
-e deliberato (chi raccomanda cede attenzione dei propri lettori), non una similarità calcolata.
+# Part 1: Data Collection 
 
-**Strategia:** snowball sampling in ampiezza (BFS) da 15 seed scelti a mano, 3 per ciascuna di 5 aree
-(letteratura, politica, tecnologia, finanza, scienza). Il crawl è stato fermato manualmente superata
-la soglia richiesta. La **rete finale è il sottografo indotto sui nodi espansi con successo**: per ogni
-nodo conosciamo tutte le raccomandazioni in uscita. I nodi solo "scoperti" (in coda) sono esclusi.
+## Data Source and Network Definition
 
-| Script | Cosa fa |
-|---|---|
-| `01_crawl.py` | crawl con checkpoint e ripresa automatica → `data/raccolta/raccomandazioni_grezze.csv`, `data/raccolta/stato_crawl.json` |
-| `02_riprova_falliti.py` | riprova i nodi la cui richiesta era fallita; chi fallisce ancora viene escluso |
-| `03_costruisci_rete.py` | sottografo indotto → `data/archi.csv`, `data/nodi.csv` |
-| `04_scarica_testi.py` | titolo+sottotitolo degli ultimi 10 post di ogni nodo → `data/raccolta/testi.jsonl` |
-| `05_scarica_corpo.py` | inizio del corpo dei post per i nodi tematicamente "deboli" → `data/raccolta/testi_extra.jsonl` |
-| `06_verifica_testi.py` | controllo di copertura dei testi |
-| `esplorazione/` | prove iniziali dell'API (mostrano, tra l'altro, che la categoria ufficiale non è esposta) |
+**Source:** Substack, accessed via the unofficial `substack-api` library (for recommendations) and the public `/api/v1/archive` endpoint (for posts). All requests were rate-limited to one per second and sent with an identifying User-Agent. Data collection was completed in August 2026.
 
-**Limiti dichiarati**
-- Lo snowball raggiunge solo nodi collegati ai seed: l'unica componente connessa è in parte un effetto del metodo; i nodi molto raccomandati sono sovra-rappresentati.
-- Substack mostra al massimo **50 raccomandazioni** per newsletter: l'out-degree è troncato a 50.
-- Gli archi verso nodi non espansi sono esclusi: il grado dei nodi scoperti per ultimi è sottostimato.
-- Gli attributi tematici sono ricavati dal testo (vedi `open_problem/`), perché la categoria ufficiale non è accessibile.
+**Network Definition:**
+- **Nodes:** Newsletters.
+- **Edges:** Recommendations (Directed: A recommends B). 
 
-**Dati** (`data/`, compressi in `data.zip`)
 
-*Dataset finale* — quello da usare per qualsiasi analisi:
-| File | Contenuto |
-|---|---|
-| `nodi.csv` | una riga per newsletter: `url`, `seed` (1 = newsletter di partenza), `lingua`, `tema`, `macro_tema`, `comunita`, `comunita_etichetta`, `grado`, `in_degree`, `out_degree` |
-| `archi.csv` | una riga per raccomandazione: `sorgente` raccomanda `destinazione`; `reciproca` = 1 se anche `destinazione` raccomanda `sorgente` |
-| `grafo_finale.gexf` | la rete non diretta con gli stessi attributi, per Gephi |
+## The Data Pipeline 
 
-*`raccolta/`* — dati grezzi, come prodotti dagli script di scraping:
-| File | Contenuto |
-|---|---|
-| `raccomandazioni_grezze.csv` | tutte le raccomandazioni raccolte dal crawl, anche verso newsletter non espanse |
-| `stato_crawl.json` | stato finale del crawl: nodi espansi, scoperti, in coda, falliti |
-| `testi.jsonl`, `testi_extra.jsonl` | titoli/sottotitoli degli ultimi 10 post; corpo dei post per i nodi tematicamente deboli |
-| `stato_testi.json`, `stato_extra.json` | checkpoint dei due download dei testi |
+| Script | Function and Output |
+| :--- | :--- |
+| `01_crawl.py` | Executes the BFS crawl with checkpoints and automatic resume capabilities. Outputs: `data/raccolta/raccomandazioni_grezze.csv`, `data/raccolta/stato_crawl.json`. |
+| `02_riprova_falliti.py` | Retries requests for newsletters that failed during the initial crawl (59 failures, all successfully recovered). |
+| `03_costruisci_rete.py` | Builds the final induced subgraph from the raw crawl data. Outputs: `data/archi.csv`, `data/nodi.csv`. |
+| `04_scarica_testi.py` | Downloads the titles and subtitles of the 10 most recent posts for each node. Outputs: `data/raccolta/testi.jsonl`. |
+| `05_scarica_corpo.py` | Downloads the beginning of post bodies specifically for newsletters in weak topic clusters. Outputs: `data/raccolta/testi_extra.jsonl` *(Requires `nomi_cluster.csv` from the `open_problem/` pipeline).* |
+| `06_verifica_testi.py` | Validates and checks overall text coverage across the dataset. |
+| `esplorazione/` | Directory containing preliminary API testing scripts used before the main crawl: `prova_substack.py` (seed recommendations), `prova_api.py` (posts endpoint), and `prova_metadati.py` (metadata availability, confirming official categories are not exposed). |
 
-*`elaborazione/`* — file intermedi della pipeline (i loro contenuti confluiscono in `nodi.csv`):
-| File | Contenuto |
-|---|---|
-| `lingua_nodi.csv` | lingua di ogni newsletter |
-| `cluster_nodi.csv`, `nomi_cluster.csv` | cluster tematico di ogni nodo (congelato) e nome/macro-categoria di ogni cluster (assegnati a mano) |
-| `temi_finali.csv`, `attributi_nodi.csv` | tema dopo il recupero col corpo; tema finale e macro-categoria |
-| `comunita.csv` | comunità di riferimento (Louvain) |
+
+## Data Dictionary and File Structure
+
+All data is stored in the `data/` directory and compressed in `data.zip`.
+
+### Final Dataset 
+
+| File | Contents |
+| :--- | :--- |
+| `nodi.csv` | One row per newsletter. Columns: `url`, `seed` (1 = seed newsletter), `lingua`, `tema`, `macro_tema`, `comunita`, `comunita_etichetta`, `comunita_label` (English community name), `grado`, `in_degree`, `out_degree`. |
+| `archi.csv` | One row per recommendation. Columns: `sorgente` (recommends) `destinazione`; `reciproca` = 1 if the destination also recommends the source (occurs in 41% of recommendations). |
+| `grafo_finale.gexf` | The undirected network formatted for Gephi, including all attributes, colors, sizes, and pre-computed positions. |
+| `posizioni_fa2.csv` | Node coordinates computed once using ForceAtlas2 in Gephi (provides the frozen layout for the final network visualization). |
+
+### `raccolta/` — Raw Data (As produced by download scripts)
+
+| File | Contents |
+| :--- | :--- |
+| `raccomandazioni_grezze.csv` | All raw recommendations collected during the crawl, including edges pointing to non-expanded newsletters. |
+| `stato_crawl.json` | Final state of the crawler: tracks expanded, discovered, queued, and failed newsletters. |
+| `testi.jsonl`, `testi_extra.jsonl` | Raw text data: titles/subtitles of the 10 most recent posts, and post body excerpts for weak-cluster newsletters. |
+| `stato_testi.json`, `stato_extra.json` | Checkpoint files tracking the progress of the two text download scripts. |
+
+### `elaborazione/` — Intermediate Pipeline Files
+
+*Note: These files are generated during the topic inference pipeline and are ultimately merged into the final `nodi.csv`.*
+
+| File | Contents |
+| :--- | :--- |
+| `lingua_nodi.csv` | Detected language for each newsletter. |
+| `cluster_nodi.csv`, `nomi_cluster.csv` | Initial topic cluster assignments (frozen). Includes the manually assigned name, macro-topic, and "weak" flag for each cluster based on characteristic terms. |
+| `temi_finali.csv`, `attributi_nodi.csv` | Refined topic assignments after the post-body recovery step. Contains the final topic and macro-topic labels. |
+| `comunita.csv` | The reference community partition (Louvain algorithm, frozen). |
+
