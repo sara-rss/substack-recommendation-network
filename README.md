@@ -42,10 +42,5 @@ This project maps that web of endorsements from scratch to answer one compelling
 - **Data Acquisition**: Unofficial [`substack-api`](https://github.com/NHagar/substack_api)
 - **Visualization**: Gephi (for network layout and rendering)
 
----
 
-## Dive Deeper
-
-The complete methodology, results, and detailed visualizations are available in the full project report:  
-[Read the Full Report](report/report_Rossi.pdf)
 
